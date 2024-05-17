@@ -1,0 +1,25 @@
+{
+  "name": "translate-rpgmaker-plugin",
+  "version": "1.0.0",
+  "description": "Translate parameters of RPGMaker plugin.",
+  "homepage": "https://github.com/moonyoulove/translate-rm-plugin-params",
+  "main": "lib.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "RPG Maker"
+  ],
+  "author": "moonyoulove",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@azure-rest/ai-translation-text": "^1.0.0-beta.1",
+    "@google-cloud/translate": "^8.2.0",
+    "commander": "^12.0.0",
+    "deepl-node": "^1.13.0",
+    "dotenv": "^16.4.5",
+    "jsdom": "^24.0.0"
+  },
+  "bin": "./translate.js"
+}
