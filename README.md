@@ -8,7 +8,7 @@ or install by npm directly.
 npm install https://github.com/moonyoulove/translate-rpgmaker-plugin.git
 ```
 ## Config
-Guide to project directory, rename *.env.example* to *.env* and fill it on demand
+Go to project directory, rename *.env.example* to *.env* and fill it on demand
 ```shell
 DEEPL_KEY=
 AZURE_KEY=
@@ -19,7 +19,7 @@ Get key from:
 3. [Azure Text Translation](https://learn.microsoft.com/en-us/azure/ai-services/translator/create-translator-resource#get-your-authentication-keys-and-endpoint)
 3. [Google Cloud Translation](https://cloud.google.com/translate/docs/authentication#authn-how-to)
 
-or just copy text to existing translator munaully.
+or just copy text to existing translator manually.
 
 ## Usage
 Use this command in project directory
