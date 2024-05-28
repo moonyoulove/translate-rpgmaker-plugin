@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { JSDOM } from "jsdom";
 import "dotenv/config";
 import { Buffer } from "node:buffer";
 import path from "node:path";
@@ -30,6 +29,7 @@ function parseOptions(options) {
         outputDir: options.outputDir ?? "./",
         engineType: options.engineType ?? "manual",
         txtPath: options.txtPath ?? "",
+        splitText: options.splitText ?? false,
     };
 }
 
@@ -39,7 +39,7 @@ async function translateTextByGoogle(text, { srcLang, targetLang }) {
     const option = {
         from: srcLang,
         to: targetLang,
-        format: "html",
+        format: "text",
     };
     return (await translate.translate(text, option))[0];
 }
@@ -49,7 +49,7 @@ async function translateTextByDeepl(text, { srcLang, targetLang }) {
     const authKey = process.env.DEEPL_KEY;
     const translator = new deepl.Translator(authKey);
     const result = await translator.translateText(text, srcLang, targetLang, {
-        tagHandling: "html",
+        tagHandling: undefined,
     });
     return result.text;
 }
@@ -70,7 +70,7 @@ async function translateTextByAzure(text, { srcLang, targetLang }) {
         queryParameters: {
             to: targetLang,
             from: srcLang,
-            textType: "html",
+            textType: "plain",
         },
     };
     const translateResponse = await translationClient.path("/translate").post(requestOptions);
@@ -91,7 +91,7 @@ function translateTextByManual(text, { pluginPath, outputDir, txtPath }) {
 }
 
 async function translateFakeText(text, options) {
-    return text.replaceAll(/<li>/g, "$&[Translated]: ");
+    return text.replaceAll(/\n/g, "$&[Translated]: ");
 }
 
 function getTranslateFunc(engineType) {
@@ -109,12 +109,16 @@ function getTranslateFunc(engineType) {
 
 async function translateText(text, options) {
     const maxSize = 100000;
-    const splitted = checkSplitText(text, maxSize) ? splitText(text, maxSize) : [text];
+    const splitted = checkSplitText(text, maxSize, options) ? splitText(text, maxSize) : [text];
     const translateFunc = getTranslateFunc(options.engineType);
-    return await Promise.all(splitted.map(text => translateFunc(text, options)));
+    const translated = await Promise.all(splitted.map(text => translateFunc(text, options)));
+    return translated.join("");
 }
 
 function checkSplitText(text, maxSize, options) {
+    if (options.engineType === "manual") {
+        return false;
+    }
     const size = Buffer.byteLength(encodeURIComponent(text));
     if (size > maxSize) {
         if (!options.splitText) {
@@ -129,25 +133,22 @@ function checkSplitText(text, maxSize, options) {
 
 function splitText(text, maxSize) {
     const splitted = [];
+    const lines = text.split("\n");
+    let part = "";
     let size = 0;
-    for (let i = 0; i < text.length; i++) {
-        const charSize = Buffer.byteLength(encodeURIComponent(text[i]));
-        size += charSize;
-        if (size > maxSize) {
-            const index = findTagEnd(text, i) ?? i;
-            splitted.push(text.slice(0, index));
-            text = text.slice(index);
-            i = 0;
+    while (lines.length > 0) {
+        const lineSize = Buffer.byteLength(encodeURIComponent(lines[0]));
+        if (size + lineSize <= maxSize) {
+            part += lines.shift();
+            size += lineSize;
+        } else {
+            splitted.push(part);
+            part = "";
             size = 0;
         }
     }
-    splitted.push(text);
+    splitted.push(part);
     return splitted;
-}
-
-function findTagEnd(text, position) {
-    const index = text.lastIndexOf("</li>", position);
-    return index > 0 ? index + "</li>".length : null;
 }
 
 function parsePlugin(pluginText) {
@@ -224,22 +225,35 @@ function parseComment(commentText) {
         params: {},
     };
     /*:
+     * @help
+     * aaaa
+     * bbbb
      * @param xxx
      * @text yyy
      */
-    // match " * @param "
-    const params = Array.from(comment.text.matchAll(/\r?\n \* @\w+\s/g));
+    // match " * @param " or " * "
+    const separators = Array.from(comment.text.matchAll(/\r?\n \* (@\w+\s)?/g));
     let start = 0;
+    let isParamFound = false;
     const ignoreParams = { "@option": [] };
-    for (let j = 0; j < params.length; j++) {
-        const param = params[j];
-        if (param[0].match(/@param|@arg/)) {
-            removeIgnoredParams(comment, ignoreParams);
-        } else if (param[0].match(/@value/)) {
-            ignoreParams["@option"].pop();
-        } else if (param[0].match(/@desc|@plugindesc|@help|@text|@option/)) {
-            const valueStart = param.index + param[0].length;
-            const valueEnd = params[j + 1]?.index || comment.text.length;
+    for (let j = 0; j < separators.length; j++) {
+        const separator = separators[j];
+        const param = separator[0].match(/@\w+/)?.[0];
+        if (param) {
+            switch (param) {
+                case "@param":
+                case "@arg":
+                    removeIgnoredParams(comment, ignoreParams);
+                    break;
+                case "@value":
+                    ignoreParams["@option"].pop();
+                    break;
+            }
+            isParamFound = ["@desc", "@plugindesc", "@help", "@text", "@option"].includes(param);
+        }
+        if (isParamFound) {
+            const valueStart = separator.index + separator[0].length;
+            const valueEnd = separators[j + 1]?.index || comment.text.length;
             const value = comment.text.slice(valueStart, valueEnd);
             comment.blocks.push(comment.text.slice(start, valueStart));
             comment.blocks.push(value);
@@ -249,7 +263,7 @@ function parseComment(commentText) {
                 text: value,
                 translated: "",
             };
-            if (param[0].match(/@option/)) {
+            if (param === "@option") {
                 ignoreParams["@option"].push(index);
             }
         }
@@ -268,33 +282,21 @@ function removeIgnoredParams(comment, ignoreParams) {
 }
 
 function makeTranslateList(plugin) {
-    const document = new JSDOM().window.document;
+    const texts = [];
     const locations = [];
     for (const commentIndex in plugin.comments) {
         const comment = plugin.comments[commentIndex];
         for (const paramIndex in comment.params) {
             const param = comment.params[paramIndex];
             locations.push({ commentIndex, paramIndex });
-            const li = document.createElement("li");
-            /*:
-             * @param xxx
-             * @text yyy
-             */
-            // match " * "
-            li.innerHTML = param.text.replaceAll(/\r?\n \* /g, "<br>");
-            document.body.appendChild(li);
+            texts.push(param.text);
         }
     }
-    const textToTranslate = document.body.innerHTML;
-    return { locations, textToTranslate };
+    return { locations, textToTranslate: texts.join("\n") };
 }
 
 function applyTranslation(plugin, list, text) {
-    const document = new JSDOM().window.document;
-    document.body.innerHTML = text;
-    document.querySelectorAll("li").forEach((li, i) => {
-        li.querySelectorAll("br").forEach(br => br.replaceWith(document.createTextNode("\n * ")));
-        const translated = li.textContent;
+    text.split("\n").forEach((translated, i) => {
         const { commentIndex, paramIndex } = list[i];
         plugin.comments[commentIndex].params[paramIndex].translated = translated;
     });

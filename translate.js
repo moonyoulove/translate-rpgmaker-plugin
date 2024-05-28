@@ -15,7 +15,7 @@ program
             .default("manual")
             .choices(["deepl", "azure", "google", "manual"])
     )
-    .option("--split-text", "for translate large amounts of text, but be aware of API quotas")
+    .option("--split-text", "for translate large amounts of text, but be aware of API quotas", false)
     .addHelpText(
         "after",
         `
