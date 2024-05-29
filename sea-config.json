@@ -1,0 +1,5 @@
+{
+  "main": "build/bundled-translate.js",
+  "output": "build/sea-prep.blob",
+  "disableExperimentalSEAWarning": true
+} 

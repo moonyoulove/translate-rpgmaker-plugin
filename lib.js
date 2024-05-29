@@ -232,12 +232,12 @@ function parseComment(commentText) {
      * @text yyy
      */
     // match " * @param " or " * "
-    const separators = Array.from(comment.text.matchAll(/\r?\n \* (@\w+\s)?/g));
+    const separators = Array.from(comment.text.matchAll(/\r?\n \*( @\w+ ?| )?/g));
     let start = 0;
     let isParamFound = false;
     const ignoreParams = { "@option": [] };
-    for (let j = 0; j < separators.length; j++) {
-        const separator = separators[j];
+    for (let i = 0; i < separators.length; i++) {
+        const separator = separators[i];
         const param = separator[0].match(/@\w+/)?.[0];
         if (param) {
             switch (param) {
@@ -249,28 +249,53 @@ function parseComment(commentText) {
                     ignoreParams["@option"].pop();
                     break;
             }
-            isParamFound = ["@desc", "@plugindesc", "@help", "@text", "@option"].includes(param);
+            isParamFound = [
+                "@desc",
+                "@plugindesc",
+                "@help",
+                "@text",
+                "@option",
+                "@on",
+                "@off",
+            ].includes(param);
         }
         if (isParamFound) {
             const valueStart = separator.index + separator[0].length;
-            const valueEnd = separators[j + 1]?.index || comment.text.length;
+            const valueEnd = separators[i + 1]?.index || comment.text.length;
             const value = comment.text.slice(valueStart, valueEnd);
-            comment.blocks.push(comment.text.slice(start, valueStart));
-            comment.blocks.push(value);
-            start = valueEnd;
-            const index = comment.blocks.length - 1;
-            comment.params[index] = {
-                text: value,
-                translated: "",
-            };
-            if (param === "@option") {
-                ignoreParams["@option"].push(index);
+            if (value.match(/\p{L}/u)) {
+                comment.blocks.push(comment.text.slice(start, valueStart));
+                start = valueEnd;
+                const { values, indexes } = escapeMeta(value, comment.blocks.length - 1);
+                comment.blocks.push(...values);
+                for (const index of indexes) {
+                    comment.params[index] = {
+                        text: comment.blocks[index],
+                        translated: "",
+                    };
+                    if (param === "@option") {
+                        ignoreParams["@option"].push(index);
+                    }
+                }
             }
         }
     }
     comment.blocks.push(comment.text.slice(start));
     removeIgnoredParams(comment, ignoreParams);
     return comment;
+}
+
+function escapeMeta(value, current) {
+    const splitted = value.split(/(<[^<>:]+:?[^>]*>)/);
+    const values = [];
+    const indexes = [];
+    for (let i = 0; i < splitted.length; i++) {
+        values.push(splitted[i]);
+        if (i % 2 === 0) {
+            indexes.push(current + 1 + i);
+        }
+    }
+    return { values, indexes };
 }
 
 function removeIgnoredParams(comment, ignoreParams) {
@@ -296,10 +321,12 @@ function makeTranslateList(plugin) {
 }
 
 function applyTranslation(plugin, list, text) {
-    text.split("\n").forEach((translated, i) => {
-        const { commentIndex, paramIndex } = list[i];
-        plugin.comments[commentIndex].params[paramIndex].translated = translated;
-    });
+    text.split("\n")
+        .slice(0, list.length)
+        .forEach((translated, i) => {
+            const { commentIndex, paramIndex } = list[i];
+            plugin.comments[commentIndex].params[paramIndex].translated = translated;
+        });
 }
 
 function generateOutput(plugin, targetLang) {

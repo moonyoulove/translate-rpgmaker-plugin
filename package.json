@@ -5,7 +5,8 @@
   "homepage": "https://github.com/moonyoulove/translate-rm-plugin-params",
   "main": "lib.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node ./build.js --app-name=translate-rm"
   },
   "keywords": [
     "RPG Maker"
@@ -18,8 +19,12 @@
     "@google-cloud/translate": "^8.2.0",
     "commander": "^12.0.0",
     "deepl-node": "^1.13.0",
-    "dotenv": "^16.4.5",
-    "jsdom": "^24.0.0"
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.4",
+    "ora": "^8.0.1",
+    "shelljs": "^0.8.5"
   },
   "bin": "./translate.js"
 }
