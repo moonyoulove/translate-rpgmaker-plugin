@@ -6,7 +6,7 @@
   "main": "lib.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node ./build.js --app-name=translate-rm"
+    "build": "node ./build.js --start-js=./translate.js --app-name=translate-rm"
   },
   "keywords": [
     "RPG Maker"

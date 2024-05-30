@@ -1,17 +1,19 @@
+#!/usr/bin/env node
 import shell from "shelljs";
 import { program } from "commander";
 import ora from "ora";
 import fs from "node:fs";
 import path from "node:path";
+const platform = { win32: "windows", darwin: "macos" }[process.platform] ?? "linux";
+const spinner = ora();
+console.log(process.env)
 program
-    .requiredOption("--start-js <path>", "javascript file to bundle")
     .requiredOption("--app-name <name>", "executable app name")
+    .option("--start-js <path>", "javascript file to bundle", process.env.npm_package_bin)
     .option("--build-dir <dir>", "build folder", "./build")
     .option("--node-path <path>", "custom node binary path to copy")
     .parse();
 const { startJs, buildDir, appName, nodePath } = program.opts();
-const platform = { win32: "windows", darwin: "macos" }[process.platform] ?? "linux";
-const spinner = ora();
 
 spinner.text = "Bundle javascript file";
 await exec(
