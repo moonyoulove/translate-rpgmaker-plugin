@@ -24,6 +24,7 @@ spinner.text = "Create configuration file";
 const config = {
     main: `${buildDir}/bundled-${path.basename(startJs)}`,
     output: `${buildDir}/sea-prep.blob`,
+    disableExperimentalSEAWarning: true,
 };
 await write(`${buildDir}/sea-config.json`, JSON.stringify(config));
 

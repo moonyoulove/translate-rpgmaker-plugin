@@ -5,12 +5,14 @@ npm install
 ```
 Or install by npm directly:
 ```shell
-npm install https://github.com/moonyoulove/translate-rpgmaker-plugin.git
+npm install translate-rpgmaker-plugin
 ```
 Or download single executable app from [release page](https://github.com/moonyoulove/translate-rpgmaker-plugin/releases/latest).
 
 ## Config
 Go to project directory, rename *.env.example* to *.env* and fill it on demand.
+
+If using executable binary, put *.env* in the same directory.
 ```shell
 DEEPL_KEY=
 AZURE_KEY=
@@ -65,6 +67,11 @@ Translate engine types:
   manual
     will generate txt file for manual translation (ex. website version of google translate, microsoft word, etc..)
 ```
+Available languages:
+1. [DeepL](https://developers.deepl.com/docs/resources/supported-languages)
+3. [Azure Text Translation](https://learn.microsoft.com/en-us/azure/ai-services/translator/language-support)
+3. [Google Cloud Translation](https://cloud.google.com/translate/docs/languages)
+
 ## Programming
 ```js
 import translatePlugin from "translate-rpgmaker-plugin";
