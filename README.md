@@ -5,7 +5,7 @@ npm install
 ```
 Or install by npm directly:
 ```shell
-npm install translate-rpgmaker-plugin
+npm install translate-rpgmaker-plugin --global
 ```
 Or download single executable app from [release page](https://github.com/moonyoulove/translate-rpgmaker-plugin/releases/latest).
 
@@ -30,9 +30,9 @@ Use this command in project directory:
 ```
 node ./translate.js [options] <plugin>
 ```
-Or use use this command in anywhere:
+Or use use this command in anywhere(when installing globally):
 ```
-npx translate-rpgmaker-plugin [options] <plugin>
+translate-rpgmaker-plugin [options] <plugin>
 ```
 Or use single executable app:
 ```

@@ -2,7 +2,7 @@
   "name": "translate-rpgmaker-plugin",
   "version": "1.0.0",
   "description": "Translate parameters of RPGMaker plugin.",
-  "homepage": "https://github.com/moonyoulove/translate-rm-plugin-params",
+  "homepage": "https://github.com/moonyoulove/translate-rpgmaker-plugin",
   "main": "lib.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
